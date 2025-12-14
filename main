@@ -1,0 +1,71 @@
+class SimpleCPU:
+    def __init__(self, memory_size=256):
+        # 4 general-purpose registers R0–R3
+        self.registers = [0, 0, 0, 0]
+        # simple RAM
+        self.memory = [0] * memory_size
+        # program counter
+        self.pc = 0
+        # running flag
+        self.running = True
+
+    def load_program(self, program, start_addr=0):
+        for i, byte in enumerate(program):
+            self.memory[start_addr + i] = byte
+        self.pc = start_addr
+
+    def step(self):
+        opcode = self.memory[self.pc]
+        self.pc += 1
+
+        # opcode meanings:
+        # 0 = HALT
+        # 1 = LOAD_IMM reg, value
+        # 2 = ADD reg_dst, reg_src
+        # 3 = PRINT reg
+        if opcode == 0:  # HALT
+            self.running = False
+
+        elif opcode == 1:  # LOAD_IMM
+            reg = self.memory[self.pc]
+            val = self.memory[self.pc + 1]
+            self.pc += 2
+            self.registers[reg] = val
+
+        elif opcode == 2:  # ADD
+            dst = self.memory[self.pc]
+            src = self.memory[self.pc + 1]
+            self.pc += 2
+            self.registers[dst] = (self.registers[dst] + self.registers[src]) & 0xFF
+
+        elif opcode == 3:  # PRINT
+            reg = self.memory[self.pc]
+            self.pc += 1
+            print("R{} = {}".format(reg, self.registers[reg]))
+
+        else:
+            raise ValueError(f"Unknown opcode {opcode} at pc={self.pc - 1}")
+
+    def run(self):
+        while self.running:
+            self.step()
+
+
+# Example "program":
+# LOAD_IMM R0, 10
+# LOAD_IMM R1, 20
+# ADD R0, R1          ; R0 = 30
+# PRINT R0
+# HALT
+program = [
+    1, 0, 10,   # LOAD_IMM R0, 10
+    1, 1, 20,   # LOAD_IMM R1, 20
+    2, 0, 1,    # ADD R0, R1
+    3, 0,       # PRINT R0
+    0           # HALT
+]
+
+if __name__ == "__main__":
+    cpu = SimpleCPU()
+    cpu.load_program(program)
+    cpu.run()
